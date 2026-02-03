@@ -48,6 +48,7 @@ jobs:
 
       - uses: ./.github/actions/create-release-notes
         name: Create Release Notes
+        if: github.ref != 'refs/heads/main' # 假设首次发布不从 main 分支触发，或者有其他条件判断
         with:
           tag-name: ${{ steps.rel_number.outputs.version }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
