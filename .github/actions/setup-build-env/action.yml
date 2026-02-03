@@ -34,3 +34,4 @@ runs:
       with:
         cache-disabled: ${{ inputs.cache-disabled == 'true'}}
         cache-encryption-key: ${{ inputs.cache-encryption-key}}
+        fail-on-warnings: false
