@@ -14,8 +14,8 @@ runs:
       id: translations
       shell: bash
       run: |
-        ZIP=`\
-          curl --location --request POST "https://api.lokalise.com/api2/projects/${{inputs.lokalise-project}}/files/download" \
+        # 捕获整个 Lokalise API 响应，而不是直接管道给 jq
+        LOKALISE_API_RESPONSE=$(curl --location --request POST "https://api.lokalise.com/api2/projects/${{inputs.lokalise-project}}/files/download" \
             --header "X-Api-Token: ${{inputs.lokalise-token}}" \
             --header 'Content-Type: application/json' \
             --data-raw '{
@@ -25,13 +25,24 @@ runs:
                 "add_newline_eof": true,
                 "replace_breaks": true,
                 "export_empty_as": "skip"
-            }' \
-          | jq -r '.bundle_url' \
-        `
+            }')
+
+        # 打印完整的 API 响应，以便调试
+        echo "Lokalise API Full Response:"
+        echo "$LOKALISE_API_RESPONSE"
+
+        # 从响应中提取 bundle_url
+        ZIP=$(echo "$LOKALISE_API_RESPONSE" | jq -r '.bundle_url')
 
         echo "Download Ready: $ZIP"
 
-        curl $ZIP --output strings.zip
+        # 添加检查，如果 ZIP 为空或 "null"，则报错
+        if [ "$ZIP" = "null" ] || [ -z "$ZIP" ]; then
+            echo "Error: Lokalise API did not return a valid bundle_url. Please check your Lokalise project ID, API token, permissions, and ensure there are translatable files configured correctly."
+            exit 1
+        fi
+
+        curl "$ZIP" --output strings.zip # 最佳实践，用引号包围变量
 
         echo "Download Complete, unzipping"
         unzip -n strings.zip
